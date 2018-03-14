@@ -24,9 +24,11 @@
 package hudson.plugins.validating_string_parameter;
 
 import hudson.AbortException;
+import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.tasks.BuildWrapper;
 import java.io.IOException;
@@ -76,6 +78,15 @@ public class ValidatingStringParameterValue extends StringParameterValue {
             };
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public void buildEnvironment(Run<?, ?> build, EnvVars env) {
+        if (!Pattern.matches(regex, value)) {
+            throw new Run.RunnerAbortedException();
+        } else {
+            super.buildEnvironment(build, env);
         }
     }
 
