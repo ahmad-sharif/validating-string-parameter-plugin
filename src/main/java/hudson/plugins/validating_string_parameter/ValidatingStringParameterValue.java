@@ -31,9 +31,9 @@ import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.tasks.BuildWrapper;
-import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.IOException;
 import java.util.regex.Pattern;
+import java.util.logging.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -91,12 +91,11 @@ public class ValidatingStringParameterValue extends StringParameterValue {
     @Override
     public void buildEnvironment(Run<?, ?> build, EnvVars env) {
         if (!Pattern.matches(regex, value)) {
-            throw new Run.RunnerAbortedException();
+            throw new RuntimeException("Invalid value for parameter [" + getName() + "] value: " + value + " doesn't match regex: " + regex, null);
         } else {
             super.buildEnvironment(build, env);
         }
     }
-
 
     @Override
     public int hashCode() {
