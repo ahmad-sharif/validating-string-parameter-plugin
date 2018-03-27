@@ -33,7 +33,8 @@ import hudson.model.StringParameterValue;
 import hudson.tasks.BuildWrapper;
 import java.io.IOException;
 import java.util.regex.Pattern;
-import java.util.logging.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -43,6 +44,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @since 1.0
  */
 public class ValidatingStringParameterValue extends StringParameterValue {
+    private static final Logger LOGGER = Logger.getLogger(ValidatingStringParameterValue.class.getName());
     private String regex;
 
     @DataBoundConstructor
@@ -69,6 +71,7 @@ public class ValidatingStringParameterValue extends StringParameterValue {
 
     @Override
     public BuildWrapper createBuildWrapper(AbstractBuild<?, ?> build) {
+        LOGGER.log(Level.INFO, "createBuildWrapper regex={0} value={1}", new Object[]{regex, value});
         if (!Pattern.matches(regex, value)) {
             // abort the build within BuildWrapper
             return new BuildWrapper() {
@@ -88,14 +91,14 @@ public class ValidatingStringParameterValue extends StringParameterValue {
         }
     }
 
-    @Override
-    public void buildEnvironment(Run<?, ?> build, EnvVars env) {
-        if (!Pattern.matches(regex, value)) {
-            throw new RuntimeException("Invalid value for parameter [" + getName() + "] value: " + value + " doesn't match regex: " + regex, null);
-        } else {
-            super.buildEnvironment(build, env);
-        }
-    }
+    //@Override
+    //public void buildEnvironment(Run<?, ?> build, EnvVars env) {
+    //    if (!Pattern.matches(regex, value)) {
+    //        throw new RuntimeException("Invalid value for parameter [" + getName() + "] value: " + value + " doesn't match regex: " + regex, null);
+    //    } else {
+    //        super.buildEnvironment(build, env);
+    //    }
+    //}
 
     @Override
     public int hashCode() {

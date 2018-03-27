@@ -24,13 +24,11 @@
 package hudson.plugins.validating_string_parameter;
 
 import hudson.Extension;
+import hudson.model.Failure;
 import hudson.model.Hudson;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import hudson.util.FormValidation;
-
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import net.sf.json.JSONObject;
 
@@ -38,6 +36,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -52,6 +52,7 @@ import java.util.regex.PatternSyntaxException;
 public class ValidatingStringParameterDefinition extends ParameterDefinition {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(ValidatingStringParameterDefinition.class.getName());
     private String defaultValue;
     private String regex;
     private String failedValidationMessage;
@@ -115,9 +116,11 @@ public class ValidatingStringParameterDefinition extends ParameterDefinition {
         }
 
         /**
-         * Chcek the regular expression entered by the user
+         * Checks regular expression entered by the user when configuring Pipeline
+	 * parameters.
          */
         public FormValidation doCheckRegex(@QueryParameter final String value) {
+            LOGGER.log(Level.INFO, "doCheckRegex value={0}", value);
             try {
                 Pattern.compile(value);
                 return FormValidation.ok();
@@ -132,6 +135,7 @@ public class ValidatingStringParameterDefinition extends ParameterDefinition {
         public FormValidation doValidate(@QueryParameter("regex") String regex,
                 @QueryParameter("failedValidationMessage") final String failedValidationMessage,
                 @QueryParameter("value") final String value) {
+            LOGGER.log(Level.INFO, "doValidate regex={0} value={1}", new Object[]{regex, value});
             try {
                 if (Pattern.matches(regex, value)) {
                     return FormValidation.ok();
@@ -149,14 +153,22 @@ public class ValidatingStringParameterDefinition extends ParameterDefinition {
     @Override
     public ParameterValue createValue(StaplerRequest req, JSONObject jo) {
         ValidatingStringParameterValue value = req.bindJSON(ValidatingStringParameterValue.class, jo);
+	String req_value = value.getValue();
+
+        if (!Pattern.matches(regex, req_value)) {
+            throw new Failure("Invalid value for parameter [" + getName() + "] specified: " + req_value);
+	}
+
         value.setDescription(getDescription());
         value.setRegex(regex);
+        LOGGER.log(Level.INFO, "createValue(StaplerRequest, JSONObject) regex={0}", regex);
         return value;
     }
 
     @Override
     public ParameterValue createValue(StaplerRequest req) {
         String[] value = req.getParameterValues(getName());
+        LOGGER.log(Level.INFO, "createValue(StaplerRequest) regex={0}", regex);
         if (value == null || value.length < 1) {
             return getDefaultParameterValue();
         } else {
